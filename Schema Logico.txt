@@ -1,0 +1,6 @@
+SCHEMA LOGICO
+
+RILEVAZIONI(Id**,Temperatura,Umidità,Ora,Data,IDArduino*)
+ARDUINO(ID**,NumeroPiano,Descrizione)
+DATI(ID**,IDArduino*,IDComputerdiPiano*)
+COMPUTERDIPIANO(ID**,NumeroPiano,Descrizione)
