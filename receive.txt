@@ -1,0 +1,129 @@
+ La classe deve implementare:Runnable, SerialPortEventListener_
+****
+static CommPortIdentifier portId;
+    static Enumeration portList;
+    InputStream inputStream;
+    SerialPort serialPort;
+    Thread readThread;
+**********************************
+Lista comboBox
+**
+ Object selectedItem = jComboPorte.getSelectedItem();
+
+        String com = selectedItem.toString();
+        SimpleRead(com);
+*****************************
+Cerca porte disponibili
+ java.util.Enumeration<CommPortIdentifier> portEnum = CommPortIdentifier.getPortIdentifiers();
+        int i = 0;
+        String[] r = new String[5];
+
+        while (portEnum.hasMoreElements() && i < 5) {
+            CommPortIdentifier portIdentifier = portEnum.nextElement();
+
+            r[i] = portIdentifier.getName();//+  " - " +  getPortTypeName(portIdentifier.getPortType()) ;
+
+
+            i++;
+
+
+        }
+
+        jComboPorte.setModel(new javax.swing.DefaultComboBoxModel(r));
+
+***********************
+Metodo per ricevere i dati di temperatura dal nostro Arduino
+
+    public void SimpleRead(String com) {
+        portList = CommPortIdentifier.getPortIdentifiers();
+
+        while (portList.hasMoreElements()) {
+            portId = (CommPortIdentifier) portList.nextElement();
+            if (portId.getPortType() == CommPortIdentifier.PORT_SERIAL) {
+                if (portId.getName().equals(com)) {
+                    //                if (portId.getName().equals("/dev/term/a")) {
+                    try {
+                        serialPort = (SerialPort) portId.open("SimpleReadApp", 2000);
+                    } catch (PortInUseException e) {
+                        System.out.println(e);
+                    }
+                    try {
+                        inputStream = serialPort.getInputStream();
+                    } catch (IOException e) {
+                        System.out.println(e);
+                    }
+                    try {
+                        serialPort.addEventListener(this);
+                    } catch (TooManyListenersException e) {
+                        System.out.println(e);
+                    }
+                    serialPort.notifyOnDataAvailable(true);
+                    try {
+                        serialPort.setSerialPortParams(9600,
+                                SerialPort.DATABITS_8,
+                                SerialPort.STOPBITS_1,
+                                SerialPort.PARITY_NONE);
+                    } catch (UnsupportedCommOperationException e) {
+                        System.out.println(e);
+                    }
+                    readThread = new Thread(this);
+                    readThread.start();
+                }
+            }
+        }
+
+    }
+
+    public void run() {
+        try {
+            Thread.sleep(20000);
+        } catch (InterruptedException e) {
+            System.out.println(e);
+        }
+    }
+
+    public void serialEvent(SerialPortEvent event) {
+        switch (event.getEventType()) {
+            case SerialPortEvent.BI:
+            case SerialPortEvent.OE:
+            case SerialPortEvent.FE:
+            case SerialPortEvent.PE:
+            case SerialPortEvent.CD:
+            case SerialPortEvent.CTS:
+            case SerialPortEvent.DSR:
+            case SerialPortEvent.RI:
+            case SerialPortEvent.OUTPUT_BUFFER_EMPTY:
+                break;
+            case SerialPortEvent.DATA_AVAILABLE:
+                byte[] readBuffer = new byte[12];
+
+                try {
+                    while (inputStream.available() > 0) {
+                        //int numBytes = inputStream.read(readBuffer);
+                        inputStream.read(readBuffer);
+                    }
+
+                    String y = new String(readBuffer);
+                    System.out.print(new String(readBuffer));
+                    jTextVisualizzaTemp.setText("    " + y + "    ");
+                    waiting(1);
+                } catch (IOException e) {
+                    System.out.println(e);
+                }
+                break;
+        }
+    }
+
+    ////////
+    public static void waiting(int n) {
+
+        long t0, t1;
+
+        t0 = System.currentTimeMillis();
+
+        do {
+            t1 = System.currentTimeMillis();
+        } while ((t1 - t0) < (n * 1000));
+    }
+    ////////////
+*****
